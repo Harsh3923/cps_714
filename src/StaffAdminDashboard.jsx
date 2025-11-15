@@ -1,20 +1,6 @@
 import React, { useEffect, useState } from "react";
-// Uncomment to use Firebase
-// import { initializeApp } from "firebase/app";
-// import { getFirestore, collection, getDocs, doc, updateDoc } from "firebase/firestore";
-
-const USE_FIRESTORE = false; // set true when Firebase is configured
-
-// const firebaseConfig = {
-//   apiKey: "YOUR_API_KEY",
-//   authDomain: "YOUR_AUTH_DOMAIN",
-//   projectId: "YOUR_PROJECT_ID",
-// };
-// let db;
-// if (USE_FIRESTORE) {
-//   const app = initializeApp(firebaseConfig);
-//   db = getFirestore(app);
-// }
+import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
+import { db, USE_FIRESTORE } from "./firebase.js";
 
 const mockMembers = [
   { id: "m-001", name: "Aisha Khan", email: "aisha.k@example.com", cardNumber: "C-1001", status: "pending" },
@@ -33,77 +19,92 @@ const mockOverdueReport = [
 export default function StaffAdminDashboard() {
   const [members, setMembers] = useState([]);
   const [overdueReport, setOverdueReport] = useState([]);
-  const [metrics, setMetrics] = useState({ 
-    totalMembers: 0, 
+  const [metrics, setMetrics] = useState({
+    totalMembers: 0,
     todaysCheckouts: 0,
     activeMembers: 0,
     suspendedMembers: 0,
     rejectedMembers: 0,
-    pendingApplications: 0
+    pendingApplications: 0,
   });
 
-  useEffect(() => {
-    if (!USE_FIRESTORE) {
-      setMembers(mockMembers);
-      setOverdueReport(mockOverdueReport);
-      const activeCount = mockMembers.filter(m => m.status === "active").length;
-      const suspendedCount = mockMembers.filter(m => m.status === "suspended").length;
-      const rejectedCount = mockMembers.filter(m => m.status === "rejected").length;
-      const pendingCount = mockMembers.filter(m => m.status === "pending").length;
-      
-      setMetrics({
-        totalMembers: mockMembers.length,
-        todaysCheckouts: 12,
-        activeMembers: activeCount,
-        suspendedMembers: suspendedCount,
-        rejectedMembers: rejectedCount,
-        pendingApplications: pendingCount
-      });
-    }
-  }, []);
-
-  const approveMember = (id) => {
-    setMembers((p) => p.map((m) => (m.id === id ? { ...m, status: "active" } : m)));
-    // Update metrics after state change
-    setTimeout(() => {
-      const updatedMembers = members.map(m => m.id === id ? { ...m, status: "active" } : m);
-      updateMetrics(updatedMembers);
-    }, 0);
-  };
-
-  const rejectMember = (id) => {
-    setMembers((p) => p.map((m) => (m.id === id ? { ...m, status: "rejected" } : m)));
-    // Update metrics after state change
-    setTimeout(() => {
-      const updatedMembers = members.map(m => m.id === id ? { ...m, status: "rejected" } : m);
-      updateMetrics(updatedMembers);
-    }, 0);
-  };
-
-  const suspendMember = (id) => {
-    setMembers((p) => p.map((m) => (m.id === id ? { ...m, status: "suspended" } : m)));
-    // Update metrics after state change
-    setTimeout(() => {
-      const updatedMembers = members.map(m => m.id === id ? { ...m, status: "suspended" } : m);
-      updateMetrics(updatedMembers);
-    }, 0);
-  };
-
+  // helper to recompute metrics from a list of members
   const updateMetrics = (membersList) => {
-    const activeCount = membersList.filter(m => m.status === "active").length;
-    const suspendedCount = membersList.filter(m => m.status === "suspended").length;
-    const rejectedCount = membersList.filter(m => m.status === "rejected").length;
-    const pendingCount = membersList.filter(m => m.status === "pending").length;
-    
+    const activeCount = membersList.filter((m) => m.status === "active").length;
+    const suspendedCount = membersList.filter((m) => m.status === "suspended").length;
+    const rejectedCount = membersList.filter((m) => m.status === "rejected").length;
+    const pendingCount = membersList.filter((m) => m.status === "pending").length;
+
     setMetrics({
       totalMembers: membersList.length,
-      todaysCheckouts: 12, // Keeping this static for demo
+      todaysCheckouts: 12, // keeping static for now
       activeMembers: activeCount,
       suspendedMembers: suspendedCount,
       rejectedMembers: rejectedCount,
-      pendingApplications: pendingCount
+      pendingApplications: pendingCount,
     });
   };
+
+  useEffect(() => {
+    if (!USE_FIRESTORE || !db) {
+      // mock mode
+      setMembers(mockMembers);
+      setOverdueReport(mockOverdueReport);
+      updateMetrics(mockMembers);
+    } else {
+      // Firestore mode
+      async function fetchData() {
+        try {
+          const membersCol = collection(db, "members");
+          const membersSnapshot = await getDocs(membersCol);
+
+          const membersList = membersSnapshot.docs.map((d) => ({
+            id: d.id,
+            ...d.data(),
+          }));
+
+          setMembers(membersList);
+          // overdue can stay mock for now or pull from Firestore as well
+          setOverdueReport(mockOverdueReport);
+          updateMetrics(membersList);
+        } catch (err) {
+          console.error("Error loading data from Firestore:", err);
+          // fallback to mock if Firestore fails
+          setMembers(mockMembers);
+          setOverdueReport(mockOverdueReport);
+          updateMetrics(mockMembers);
+        }
+      }
+
+      fetchData();
+    }
+  }, []);
+
+  // single helper to update status locally and in Firestore
+  const changeMemberStatus = async (id, newStatus) => {
+    // update local state and metrics
+    setMembers((prev) => {
+      const updated = prev.map((m) =>
+        m.id === id ? { ...m, status: newStatus } : m
+      );
+      updateMetrics(updated);
+      return updated;
+    });
+
+    // if Firestore is enabled, persist the change
+    if (USE_FIRESTORE && db) {
+      try {
+        const ref = doc(db, "members", id);
+        await updateDoc(ref, { status: newStatus });
+      } catch (err) {
+        console.error("Error updating member status in Firestore:", err);
+      }
+    }
+  };
+
+  const approveMember = (id) => changeMemberStatus(id, "active");
+  const rejectMember = (id) => changeMemberStatus(id, "rejected");
+  const suspendMember = (id) => changeMemberStatus(id, "suspended");
 
   const markResolved = (id, item) =>
     setOverdueReport((p) => p.filter((r) => !(r.memberId === id && r.itemTitle === item)));
@@ -142,12 +143,17 @@ export default function StaffAdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <MemberSection members={members} approve={approveMember} reject={rejectMember} suspend={suspendMember} />
+        <MemberSection
+          members={members}
+          approve={approveMember}
+          reject={rejectMember}
+          suspend={suspendMember}
+        />
         <OverdueSection overdue={overdueReport} markResolved={markResolved} />
       </div>
 
       <footer className="mt-8 text-sm text-gray-500">
-        Skeleton build for TA demo — mock data mode active
+        Skeleton build for TA demo — {USE_FIRESTORE ? "Firestore mode active" : "mock data mode active"}
       </footer>
     </div>
   );
@@ -163,39 +169,64 @@ function MetricCard({ label, value }) {
 }
 
 function MemberSection({ members, approve, reject, suspend }) {
-  // Filter members by status
-  const pendingMembers = members.filter(m => m.status === "pending");
-  const activeMembers = members.filter(m => m.status === "active");
-  const inactiveMembers = members.filter(m => m.status === "suspended" || m.status === "rejected");
+  const pendingMembers = members.filter((m) => m.status === "pending");
+  const activeMembers = members.filter((m) => m.status === "active");
+  const inactiveMembers = members.filter(
+    (m) => m.status === "suspended" || m.status === "rejected"
+  );
 
   return (
     <div className="bg-white p-4 rounded shadow">
       <h2 className="text-lg font-semibold mb-3">Member Management</h2>
-      
-      {/* Pending Members Section */}
+
       {pendingMembers.length > 0 && (
         <div className="mb-6">
-          <h3 className="font-medium text-gray-700 mb-2">Pending Applications ({pendingMembers.length})</h3>
-          <MemberTable members={pendingMembers} approve={approve} reject={reject} suspend={suspend} showActions={true} tableType="pending" />
+          <h3 className="font-medium text-gray-700 mb-2">
+            Pending Applications ({pendingMembers.length})
+          </h3>
+          <MemberTable
+            members={pendingMembers}
+            approve={approve}
+            reject={reject}
+            suspend={suspend}
+            showActions={true}
+            tableType="pending"
+          />
         </div>
       )}
-      
-      {/* Active Members Section */}
+
       {activeMembers.length > 0 && (
         <div className="mb-6">
-          <h3 className="font-medium text-gray-700 mb-2">Active Members ({activeMembers.length})</h3>
-          <MemberTable members={activeMembers} approve={approve} reject={reject} suspend={suspend} showActions={true} tableType="active" />
+          <h3 className="font-medium text-gray-700 mb-2">
+            Active Members ({activeMembers.length})
+          </h3>
+          <MemberTable
+            members={activeMembers}
+            approve={approve}
+            reject={reject}
+            suspend={suspend}
+            showActions={true}
+            tableType="active"
+          />
         </div>
       )}
-      
-      {/* Inactive Members Section (Suspended/Rejected) */}
+
       {inactiveMembers.length > 0 && (
         <div>
-          <h3 className="font-medium text-gray-700 mb-2">Suspended/Rejected Members ({inactiveMembers.length})</h3>
-          <MemberTable members={inactiveMembers} approve={approve} reject={reject} suspend={suspend} showActions={false} tableType="inactive" />
+          <h3 className="font-medium text-gray-700 mb-2">
+            Suspended/Rejected Members ({inactiveMembers.length})
+          </h3>
+          <MemberTable
+            members={inactiveMembers}
+            approve={approve}
+            reject={reject}
+            suspend={suspend}
+            showActions={false}
+            tableType="inactive"
+          />
         </div>
       )}
-      
+
       {members.length === 0 && (
         <p className="text-gray-500">No members found.</p>
       )}
@@ -224,16 +255,25 @@ function MemberTable({ members, approve, reject, suspend, showActions, tableType
               <td className="py-2 space-x-2">
                 {tableType === "pending" && (
                   <>
-                    <button onClick={() => approve(m.id)} className="px-2 py-1 bg-green-600 text-white rounded text-xs">
+                    <button
+                      onClick={() => approve(m.id)}
+                      className="px-2 py-1 bg-green-600 text-white rounded text-xs"
+                    >
                       Approve
                     </button>
-                    <button onClick={() => reject(m.id)} className="px-2 py-1 bg-red-600 text-white rounded text-xs">
+                    <button
+                      onClick={() => reject(m.id)}
+                      className="px-2 py-1 bg-red-600 text-white rounded text-xs"
+                    >
                       Reject
                     </button>
                   </>
                 )}
                 {tableType === "active" && (
-                  <button onClick={() => suspend(m.id)} className="px-2 py-1 bg-yellow-600 text-white rounded text-xs">
+                  <button
+                    onClick={() => suspend(m.id)}
+                    className="px-2 py-1 bg-yellow-600 text-white rounded text-xs"
+                  >
                     Suspend
                   </button>
                 )}
