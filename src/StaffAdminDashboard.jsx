@@ -3,12 +3,20 @@ import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 import { db, USE_FIRESTORE } from "./firebase.js";
 
 const mockMembers = [
-  { id: "m-001", name: "Aisha Khan", email: "aisha.k@example.com", cardNumber: "C-1001", status: "pending" },
-  { id: "m-002", name: "Mathew Frost", email: "mathew.k@example.com", cardNumber: "C-1002", status: "pending" },
-  { id: "m-003", name: "Liam O'Reilly", email: "liam.o@example.com", cardNumber: "C-1003", status: "active" },
-  { id: "m-004", name: "Shawn Smith", email: "shawn.o@example.com", cardNumber: "C-1004", status: "active" },
-  { id: "m-005", name: "Nickisha Roy", email: "nickisha.o@example.com", cardNumber: "C-1005", status: "active" },
-  { id: "m-006", name: "Chen Wei", email: "chen.w@example.com", cardNumber: "C-1006", status: "suspended" },
+  { id: "m-001", name: "Aisha Khan", email: "aisha.k@example.com", cardNumber: "C-1001", status: "pending", createdAt: new Date().toISOString() },
+  { id: "m-002", name: "Mathew Frost", email: "mathew.k@example.com", cardNumber: "C-1002", status: "pending", createdAt: new Date().toISOString() },
+  { id: "m-003", name: "Liam O'Reilly", email: "liam.o@example.com", cardNumber: "C-1003", status: "active", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString() },
+  { id: "m-004", name: "Shawn Smith", email: "shawn.o@example.com", cardNumber: "C-1004", status: "active", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 20).toISOString() },
+  { id: "m-005", name: "Nickisha Roy", email: "nickisha.o@example.com", cardNumber: "C-1005", status: "active", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString() },
+  { id: "m-006", name: "Chen Wei", email: "chen.w@example.com", cardNumber: "C-1006", status: "suspended", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString() },
+];
+
+const mockCheckouts = [
+  { memberId: "m-003", itemTitle: "Intro to Algorithms", checkedOutAt: new Date().toISOString() },
+  { memberId: "m-005", itemTitle: "Modern Art: A History", checkedOutAt: new Date().toISOString() },
+  { memberId: "m-003", itemTitle: "Intro to Algorithms", checkedOutAt: new Date().toISOString() },
+  { memberId: "m-004", itemTitle: "JavaScript: The Good Parts", checkedOutAt: new Date().toISOString() },
+  { memberId: "m-005", itemTitle: "Modern Art: A History", checkedOutAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 26).toISOString() },
 ];
 
 const mockOverdueReport = [
@@ -22,26 +30,60 @@ export default function StaffAdminDashboard() {
   const [metrics, setMetrics] = useState({
     totalMembers: 0,
     todaysCheckouts: 0,
+    todaysRegistrations: 0,
     activeMembers: 0,
     suspendedMembers: 0,
     rejectedMembers: 0,
     pendingApplications: 0,
+    popularItems: [], // [{ title, count }]
   });
 
-  // helper to recompute metrics from a list of members
-  const updateMetrics = (membersList) => {
+  // helper to compare dates (same day)
+  const isSameDay = (a, b = new Date()) => {
+    const d1 = new Date(a);
+    const d2 = new Date(b);
+    return d1.getFullYear() === d2.getFullYear() &&
+           d1.getMonth() === d2.getMonth() &&
+           d1.getDate() === d2.getDate();
+  };
+
+  // helper to recompute metrics from a list of members and checkouts
+  const updateMetrics = (membersList, checkoutsList = []) => {
     const activeCount = membersList.filter((m) => m.status === "active").length;
     const suspendedCount = membersList.filter((m) => m.status === "suspended").length;
     const rejectedCount = membersList.filter((m) => m.status === "rejected").length;
     const pendingCount = membersList.filter((m) => m.status === "pending").length;
 
+    // today's checkouts: count checkouts where checkedOutAt is today
+    let todaysCheckouts = 0;
+    if (checkoutsList && checkoutsList.length > 0) {
+      todaysCheckouts = checkoutsList.filter((c) => isSameDay(c.checkedOutAt)).length;
+    } else {
+      todaysCheckouts = 12; // fallback static
+    }
+
+    // today's registrations: count members created today (createdAt present in mock data)
+    const todaysRegistrations = membersList.filter((m) => m.createdAt && isSameDay(m.createdAt)).length;
+
+    // popular items: aggregate counts from checkoutsList (top 3)
+    const counts = {};
+    (checkoutsList || []).forEach((c) => {
+      counts[c.itemTitle] = (counts[c.itemTitle] || 0) + 1;
+    });
+    const popularItems = Object.entries(counts)
+      .map(([title, count]) => ({ title, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3);
+
     setMetrics({
       totalMembers: membersList.length,
-      todaysCheckouts: 12, // keeping static for now
+      todaysCheckouts,
+      todaysRegistrations,
       activeMembers: activeCount,
       suspendedMembers: suspendedCount,
       rejectedMembers: rejectedCount,
       pendingApplications: pendingCount,
+      popularItems,
     });
   };
 
@@ -50,7 +92,7 @@ export default function StaffAdminDashboard() {
       // mock mode
       setMembers(mockMembers);
       setOverdueReport(mockOverdueReport);
-      updateMetrics(mockMembers);
+      updateMetrics(mockMembers, mockCheckouts);
     } else {
       // Firestore mode
       async function fetchData() {
@@ -66,13 +108,14 @@ export default function StaffAdminDashboard() {
           setMembers(membersList);
           // overdue can stay mock for now or pull from Firestore as well
           setOverdueReport(mockOverdueReport);
-          updateMetrics(membersList);
+          // for now use mock checkouts until Firestore checkouts implemented
+          updateMetrics(membersList, mockCheckouts);
         } catch (err) {
           console.error("Error loading data from Firestore:", err);
           // fallback to mock if Firestore fails
           setMembers(mockMembers);
           setOverdueReport(mockOverdueReport);
-          updateMetrics(mockMembers);
+          updateMetrics(mockMembers, mockCheckouts);
         }
       }
 
@@ -113,10 +156,12 @@ export default function StaffAdminDashboard() {
     <div className="min-h-screen bg-gray-50 p-6">
       <h1 className="text-2xl font-bold mb-4">📚 LibraLite Staff Dashboard</h1>
 
-      {/* Only show Total Members and Today's Checkouts at the top */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      {/* Only show Total Members, Today's Checkouts, New Registrations, and Popular Items at the top */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <MetricCard label="Total Members" value={metrics.totalMembers} />
         <MetricCard label="Today's Checkouts" value={metrics.todaysCheckouts} />
+        <MetricCard label="New Registrations (Today)" value={metrics.todaysRegistrations} />
+        <PopularItemsCard items={metrics.popularItems} />
       </div>
 
       {/* Member Status Breakdown */}
@@ -164,6 +209,25 @@ function MetricCard({ label, value }) {
     <div className="bg-white p-4 rounded shadow">
       <h3 className="text-sm text-gray-600">{label}</h3>
       <p className="text-2xl font-bold">{value}</p>
+    </div>
+  );
+}
+
+function PopularItemsCard({ items }) {
+  return (
+    <div className="bg-white p-4 rounded shadow">
+      <h3 className="text-sm text-gray-600">Popular Items</h3>
+      {items && items.length > 0 ? (
+        <ul className="mt-2 text-sm">
+          {items.map((it, idx) => (
+            <li key={idx} className="font-medium">
+              {it.title} <span className="text-gray-500">({it.count})</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-gray-500 mt-2">No checkout data</p>
+      )}
     </div>
   );
 }
