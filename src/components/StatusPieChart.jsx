@@ -26,9 +26,7 @@ export default function StatusPieChart({
   const memberBg =
     totalMembers === 0
       ? "transparent"
-      : `conic-gradient(#16a34a 0% ${a}%, #f59e0b ${a}% ${a + b}%, #ef4444 ${a + b}% ${
-          a + b + c
-        }%, #3b82f6 ${a + b + c}% 100%)`;
+      : `conic-gradient(#742bde 0% ${a}%, #f6971aff ${a}% ${a + b}%, #f73838ff ${a + b}% ${a + b + c}%, #2aadfeff ${a + b + c}% 100%)`;
 
   // checked/out vs overdue pie (overdue vs not-overdue)
   const notOverdue = Math.max(0, checkoutsCount - overdueCount);
@@ -38,7 +36,7 @@ export default function StatusPieChart({
   const checkBg =
     totalCheck === 0
       ? "transparent"
-      : `conic-gradient(#ef4444 0% ${overPct}%, #3b82f6 ${overPct}% 100%)`;
+      : `conic-gradient(#f73838ff  0% ${overPct}%, #2aadfeff ${overPct}% 100%)`;
 
   // fallback simple card when both sets empty
   if (!totalMembers && totalCheck === 0) {
@@ -66,16 +64,16 @@ export default function StatusPieChart({
           <div className="text-sm">
             <div className="font-medium mb-1">Members</div>
             <div className="flex items-center mb-1">
-              <span className="w-3 h-3 inline-block mr-2 rounded-sm" style={{ background: "#16a34a" }} /> Active — {active} ({a}%)
+              <span className="w-3 h-3 inline-block mr-2 rounded-sm" style={{ background: "#742bde" }} /> Active — {active} ({a}%)
             </div>
             <div className="flex items-center mb-1">
-              <span className="w-3 h-3 inline-block mr-2 rounded-sm" style={{ background: "#f59e0b" }} /> Suspended — {suspended} ({b}%)
+              <span className="w-3 h-3 inline-block mr-2 rounded-sm" style={{ background: "#f6971aff" }} /> Suspended — {suspended} ({b}%)
             </div>
             <div className="flex items-center mb-1">
-              <span className="w-3 h-3 inline-block mr-2 rounded-sm" style={{ background: "#ef4444" }} /> Rejected — {rejected} ({c}%)
+              <span className="w-3 h-3 inline-block mr-2 rounded-sm" style={{ background: "#f73838ff " }} /> Rejected — {rejected} ({c}%)
             </div>
             <div className="flex items-center">
-              <span className="w-3 h-3 inline-block mr-2 rounded-sm" style={{ background: "#3b82f6" }} /> Pending — {pending} ({d}%)
+              <span className="w-3 h-3 inline-block mr-2 rounded-sm" style={{ background: "#2aadfeff" }} /> Pending — {pending} ({d}%)
             </div>
           </div>
         </div>
@@ -94,10 +92,10 @@ export default function StatusPieChart({
             ) : (
               <>
                 <div className="flex items-center mb-1">
-                  <span className="w-3 h-3 inline-block mr-2 rounded-sm" style={{ background: "#ef4444" }} /> Overdue — {overdueCount} ({overPct}%)
+                  <span className="w-3 h-3 inline-block mr-2 rounded-sm" style={{ background: "#f73838ff"  }} /> Overdue — {overdueCount} ({overPct}%)
                 </div>
                 <div className="flex items-center">
-                  <span className="w-3 h-3 inline-block mr-2 rounded-sm" style={{ background: "#3b82f6" }} /> Not overdue — {notOverdue} ({notOverPct}%)
+                  <span className="w-3 h-3 inline-block mr-2 rounded-sm" style={{ background: "#2aadfeff" }} /> Not overdue — {notOverdue} ({notOverPct}%)
                 </div>
               </>
             )}

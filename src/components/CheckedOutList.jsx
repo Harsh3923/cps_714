@@ -5,7 +5,7 @@ export default function CheckedOutList({ checkouts = [], members = [] }) {
   const lookupName = (id) => members.find((m) => m.id === id)?.name || id;
 
   return (
-    <div className="bg-white p-4 rounded">
+    <div className="bg-white p-4 rounded shadow">
       <h2 className="text-lg font-semibold mb-3">Checked-out Items</h2>
       {checkouts.length === 0 ? (
         <p className="text-gray-500">No items currently checked out.</p>

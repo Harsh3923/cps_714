@@ -8,7 +8,7 @@ export default function MemberSection({ members, approve, reject, suspend }) {
 
   return (
     // make the card a column flex container that fills available height
-    <div className="bg-white p-4 rounded h-full flex flex-col">
+    <div className="bg-white p-4 rounded shadow h-full flex flex-col">
       <h2 className="text-lg font-semibold mb-3">Member Management</h2>
 
       {/* content area grows to fill and becomes scrollable if it overflows */}
@@ -16,21 +16,43 @@ export default function MemberSection({ members, approve, reject, suspend }) {
         {pendingMembers.length > 0 && (
           <div>
             <h3 className="font-medium text-gray-700 mb-2">Pending Applications ({pendingMembers.length})</h3>
-            <MemberTable members={pendingMembers} approve={approve} reject={reject} suspend={suspend} showActions={true} tableType="pending" />
+            <MemberTable
+              members={pendingMembers}
+              approve={approve}
+              reject={reject}
+              suspend={suspend}
+              showActions={true}
+              tableType="pending"
+              buttonColors={{ approve: "bg-[#742bde]", reject: "bg-[#f73838ff]", suspend: "bg-[#eeb13d]" }}
+            />
           </div>
         )}
 
         {activeMembers.length > 0 && (
           <div>
             <h3 className="font-medium text-gray-700 mb-2">Active Members ({activeMembers.length})</h3>
-            <MemberTable members={activeMembers} approve={approve} reject={reject} suspend={suspend} showActions={true} tableType="active" />
+            <MemberTable
+              members={activeMembers}
+              approve={approve}
+              reject={reject}
+              suspend={suspend}
+              showActions={true}
+              tableType="active"
+            />
           </div>
         )}
 
         {inactiveMembers.length > 0 && (
           <div>
             <h3 className="font-medium text-gray-700 mb-2">Suspended/Rejected Members ({inactiveMembers.length})</h3>
-            <MemberTable members={inactiveMembers} approve={approve} reject={reject} suspend={suspend} showActions={false} tableType="inactive" />
+            <MemberTable
+              members={inactiveMembers}
+              approve={approve}
+              reject={reject}
+              suspend={suspend}
+              showActions={false}
+              tableType="inactive"
+            />
           </div>
         )}
 

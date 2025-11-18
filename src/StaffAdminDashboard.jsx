@@ -67,13 +67,13 @@ export default function StaffAdminDashboard() {
     setOverdueReport((p) => p.filter((r) => !(r.memberId === id && r.itemTitle === item)));
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <h1 className="text-2xl font-bold mb-4">📚 LibraLite Staff Dashboard</h1>
+    <div className="min-h-screen bg-slate-100 p-6">
+      <h1 className="text-2xl font-bold mb-4">LibraLITE - Staff Administration Dashboard</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <MetricCard label="Total Members" value={metrics.totalMembers} />
-        <MetricCard label="Today's Checkouts" value={metrics.todaysCheckouts} />
-        <MetricCard label="New Registrations (Today)" value={metrics.todaysRegistrations} />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 font-semibold">
+        <MetricCard label="Total Members" value={metrics.totalMembers} color="green" />
+        <MetricCard label="Today's Checkouts" value={metrics.todaysCheckouts} color="blue" />
+        <MetricCard label="New Registrations (Today)" value={metrics.todaysRegistrations} color="yellow" />
         <PopularItemsCard items={metrics.popularItems} />
       </div>
 

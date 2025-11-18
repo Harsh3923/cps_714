@@ -1,6 +1,12 @@
 import React from "react";
 
-export default function MemberTable({ members, approve, reject, suspend, showActions, tableType }) {
+export default function MemberTable({ members, approve, reject, suspend, showActions, tableType, buttonColors = {} }) {
+  const colors = {
+    approve: buttonColors.approve || "bg-green-600",
+    reject: buttonColors.reject || "bg-red-600",
+    suspend: buttonColors.suspend || "bg-yellow-600",
+  };
+
   return (
     <table className="w-full text-sm mb-4">
       <thead>
@@ -21,12 +27,12 @@ export default function MemberTable({ members, approve, reject, suspend, showAct
               <td className="py-2 space-x-2">
                 {tableType === "pending" && (
                   <>
-                    <button onClick={() => approve(m.id)} className="px-2 py-1 bg-green-600 text-white rounded text-xs">Approve</button>
-                    <button onClick={() => reject(m.id)} className="px-2 py-1 bg-red-600 text-white rounded text-xs">Reject</button>
+                    <button onClick={() => approve(m.id)} className={`px-2 py-1 ${colors.approve} text-white rounded text-xs`}>Approve</button>
+                    <button onClick={() => reject(m.id)} className={`px-2 py-1 ${colors.reject} text-white rounded text-xs`}>Reject</button>
                   </>
                 )}
                 {tableType === "active" && (
-                  <button onClick={() => suspend(m.id)} className="px-2 py-1 bg-yellow-600 text-white rounded text-xs">Suspend</button>
+                  <button onClick={() => suspend(m.id)} className={`px-2 py-1 ${colors.suspend} text-white rounded text-xs`}>Suspend</button>
                 )}
               </td>
             )}
