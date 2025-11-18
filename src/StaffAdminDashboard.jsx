@@ -92,6 +92,8 @@ export default function StaffAdminDashboard() {
               rejected: metrics.rejectedMembers,
               pending: metrics.pendingApplications,
             }}
+            checkoutsCount={mockCheckouts.length}
+            overdueCount={overdueReport.length}
           />
           <OverdueSection overdue={overdueReport} markResolved={markResolved} />
           <CheckedOutList checkouts={mockCheckouts} members={members} />
