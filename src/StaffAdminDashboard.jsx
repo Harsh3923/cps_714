@@ -6,6 +6,8 @@ import MetricCard from "./components/MetricCard";
 import PopularItemsCard from "./components/PopularItemsCard";
 import MemberSection from "./components/MemberSection";
 import OverdueSection from "./components/OverdueSection";
+import CheckedOutList from "./components/CheckedOutList";
+import StatusPieChart from "./components/StatusPieChart";
 
 import { computeMetrics } from "./lib/metrics";
 import { mockMembers, mockCheckouts, mockOverdueReport } from "./lib/mocks";
@@ -75,31 +77,25 @@ export default function StaffAdminDashboard() {
         <PopularItemsCard items={metrics.popularItems} />
       </div>
 
-      <div className="bg-white p-4 rounded shadow mb-6">
-        <h2 className="text-lg font-semibold mb-3">Member Status Breakdown</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">{metrics.activeMembers}</div>
-            <div className="text-sm text-gray-600">Active Members</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-yellow-600">{metrics.suspendedMembers}</div>
-            <div className="text-sm text-gray-600">Suspended</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-red-600">{metrics.rejectedMembers}</div>
-            <div className="text-sm text-gray-600">Rejected</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">{metrics.pendingApplications}</div>
-            <div className="text-sm text-gray-600">Pending</div>
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+        {/* left: member management fills the full height of the right stacked column */}
+        <div className="h-full">
+          <MemberSection members={members} approve={approveMember} reject={rejectMember} suspend={suspendMember} />
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <MemberSection members={members} approve={approveMember} reject={rejectMember} suspend={suspendMember} />
-        <OverdueSection overdue={overdueReport} markResolved={markResolved} />
+        {/* right: stacked cards (status pie, overdue, checked-out) */}
+        <div className="space-y-6">
+          <StatusPieChart
+            counts={{
+              active: metrics.activeMembers,
+              suspended: metrics.suspendedMembers,
+              rejected: metrics.rejectedMembers,
+              pending: metrics.pendingApplications,
+            }}
+          />
+          <OverdueSection overdue={overdueReport} markResolved={markResolved} />
+          <CheckedOutList checkouts={mockCheckouts} members={members} />
+        </div>
       </div>
 
       <footer className="mt-8 text-sm text-gray-500">

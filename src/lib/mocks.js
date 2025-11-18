@@ -10,9 +10,8 @@ export const mockMembers = [
 export const mockCheckouts = [
   { memberId: "m-003", itemTitle: "Intro to Algorithms", checkedOutAt: new Date().toISOString() },
   { memberId: "m-005", itemTitle: "Modern Art: A History", checkedOutAt: new Date().toISOString() },
-  { memberId: "m-003", itemTitle: "Intro to Algorithms", checkedOutAt: new Date().toISOString() },
   { memberId: "m-004", itemTitle: "JavaScript: The Good Parts", checkedOutAt: new Date().toISOString() },
-  { memberId: "m-005", itemTitle: "Modern Art: A History", checkedOutAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 26).toISOString() },
+  { memberId: "m-006", itemTitle: "Modern Art: A History", checkedOutAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 26).toISOString() },
 ];
 
 export const mockOverdueReport = [

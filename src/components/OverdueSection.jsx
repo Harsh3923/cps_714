@@ -2,7 +2,7 @@ import React from "react";
 
 export default function OverdueSection({ overdue, markResolved }) {
   return (
-    <div className="bg-white p-4 rounded shadow">
+    <div className="bg-white p-4 rounded">
       <h2 className="text-lg font-semibold mb-3">Overdue Items Report</h2>
       {overdue.length === 0 ? (
         <p className="text-gray-500">No overdue items.</p>

@@ -2,7 +2,7 @@ import React from "react";
 
 export default function PopularItemsCard({ items }) {
   return (
-    <div className="bg-white p-4 rounded shadow">
+    <div className="bg-white p-4 rounded">
       <h3 className="text-sm text-gray-600">Popular Items</h3>
       {items && items.length > 0 ? (
         <ul className="mt-2 text-sm">
